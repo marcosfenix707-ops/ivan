@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Modelo 3D</title>
+  <title>Modelo 3D - Cesi</title>
   <style>
     body {
       margin: 0;
@@ -14,11 +14,10 @@
       min-height: 100vh;
     }
 
-    /* Barra de navegación horizontal alineada a la izquierda */
     nav {
       background-color: #003366;
       padding: 12px 20px;
-      text-align: left; /* 👈 ahora a la izquierda */
+      text-align: left;
     }
 
     nav a {
@@ -34,14 +33,12 @@
       text-decoration: underline;
     }
 
-    /* Contenedor principal */
     #main {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    /* Lienzo ocupa espacio central */
     #canvas-container {
       flex: 1;
     }
@@ -52,7 +49,6 @@
       height: 100%;
     }
 
-    /* Footer */
     footer {
       text-align: center;
       background: #003366;
@@ -84,100 +80,66 @@
 
   <!-- Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
   <script>
-    let scene, camera, renderer;
-    let casaCesicom;
-
-    function crearCasaCesicom() {
-      casaCesicom = new THREE.Group();
-
-      // --- Bloque principal ---
-      const materialPared = new THREE.MeshStandardMaterial({ color: 0xE8E4D8 });
-      const bloquePrincipal = new THREE.Mesh(
-        new THREE.BoxGeometry(6, 3, 4),
-        materialPared
-      );
-      bloquePrincipal.position.y = 1.51;
-      casaCesicom.add(bloquePrincipal);
-
-      // --- Segundo piso ---
-      const bloqueAlto = new THREE.Mesh(
-        new THREE.BoxGeometry(2.5, 2, 4),
-        materialPared
-      );
-      bloqueAlto.position.set(2, 4.01, 0);
-      casaCesicom.add(bloqueAlto);
-
-      // --- Base ---
-      const materialBase = new THREE.MeshStandardMaterial({ color: 0x555555 });
-      const base = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 4), materialBase);
-      base.position.y = 0.5;
-      casaCesicom.add(base);
-
-      // --- Puertas ---
-      const materialPuerta = new THREE.MeshStandardMaterial({ color: 0x552200 });
-      const puerta1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.1), materialPuerta);
-      puerta1.position.set(-1, 1, 2.05);
-      casaCesicom.add(puerta1);
-
-      const puerta2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.1), materialPuerta);
-      puerta2.position.set(2, 1, 2.05);
-      casaCesicom.add(puerta2);
-
-      // --- Ventanas ---
-      const materialVentana = new THREE.MeshStandardMaterial({ color: 0x336699, metalness: 0.5, roughness: 0.2 });
-      const ventana1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.1), materialVentana);
-      ventana1.position.set(-2.2, 2, 2.05);
-      casaCesicom.add(ventana1);
-
-      const ventana2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, 0.1), materialVentana);
-      ventana2.position.set(2, 5, 2.05);
-      casaCesicom.add(ventana2);
-
-      // --- Techo ---
-      const materialTecho = new THREE.MeshStandardMaterial({ color: 0x884444 });
-      const techo = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.2, 4.2), materialTecho);
-      techo.position.y = 3.21;
-      casaCesicom.add(techo);
-
-      scene.add(casaCesicom);
-    }
-
-    function luces() {
-      const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-      const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-      directional.position.set(10, 10, 10);
-      scene.add(ambient, directional);
-    }
+    let scene, camera, renderer, model;
 
     function init() {
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(10, 8, 12);
-      camera.lookAt(0, 2, 0);
+
+      camera = new THREE.PerspectiveCamera(
+        20,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(10, 8, 18);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.getElementById("canvas-container").appendChild(renderer.domElement);
 
-      crearCasaCesicom();
-      luces();
+      // Luces
+      const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+      const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+      directional.position.set(10, 10, 10);
+      scene.add(ambient, directional);
+
+      // Cargar tu modelo Cesi.glb
+      const loader = new THREE.GLTFLoader();
+      loader.load("Cesi.glb", function(gltf) {
+        model = gltf.scene;
+        model.scale.set(2, 2, 2);   // Ajusta tamaño si es necesario
+        model.position.y = 0;       // Lo apoyamos en el "suelo"
+        scene.add(model);
+
+        // Centrar la cámara al modelo
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        camera.lookAt(center);
+      }, undefined, function(error) {
+        console.error("Error al cargar el modelo:", error);
+      });
+
+      animate();
     }
 
     function animate() {
       requestAnimationFrame(animate);
-      if (casaCesicom) casaCesicom.rotation.y += 0.005;
+      if (model) {
+        model.rotation.y += 0.005; // Rotación lenta
+      }
       renderer.render(scene, camera);
     }
-
-    init();
-    animate();
 
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    init();
   </script>
 </body>
 </html>

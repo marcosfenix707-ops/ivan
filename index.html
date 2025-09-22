@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Instituto Cesicom - Neon</title>
+  <title>Instituto Cesicom - Neon + Modelo</title>
   <style>
     body {
       margin: 0;
@@ -22,11 +23,11 @@
       top: 0;
       width: 100%;
       display: flex;
-      justify-content: flex-start;   /* A la izquierda */
-      background: #0056b3;          /* Azul */
-      padding: 15px 30px;           /* Espaciado */
+      justify-content: flex-start;
+      background: #0056b3;
+      padding: 15px 30px;
       z-index: 10;
-      border-bottom: 2px solid #003f80; /* Línea inferior */
+      border-bottom: 2px solid #003f80;
     }
 
     nav a {
@@ -47,10 +48,11 @@
       width: 100%;
       text-align: center;
       color: #fff;
-      background: #003366; /* Azul oscuro */
+      background: #003366;
       padding: 12px;
       font-size: 14px;
       letter-spacing: 1px;
+      z-index: 5;
     }
 
     /* TÍTULO NEÓN */
@@ -71,6 +73,7 @@
         0 0 120px #0088ff;
       animation: brillo 2s infinite alternate, pulse 3s infinite ease-in-out;
       z-index: 5;
+      pointer-events: none; /* deja que el canvas quede encima */
     }
 
     @keyframes brillo {
@@ -112,28 +115,10 @@
 
   <!-- THREE.JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script>
     let scene, camera, renderer;
-    let escudo;
-
-    function crearEscudo() {
-      escudo = new THREE.Object3D();
-      const loader = new THREE.TextureLoader();
-
-      const texturaEscudo = loader.load('https://cdn.glitch.global/fd9d168b-e43f-41d3-b2c5-433c4e8ca37f/SL-070919-21350-37.jpg?v=1751863719819');
-      const material = new THREE.MeshBasicMaterial({ 
-        map: texturaEscudo, 
-        transparent: true, 
-        side: THREE.DoubleSide 
-      });
-
-      const geometry = new THREE.PlaneGeometry(3, 3.6);
-      const plano = new THREE.Mesh(geometry, material);
-      escudo.add(plano);
-      escudo.position.x = 3.5;
-
-      scene.add(escudo);
-    }
+    let modelo;
 
     function luces() {
       const ambient = new THREE.AmbientLight(0xffffff, 0.8);
@@ -142,24 +127,47 @@
       scene.add(ambient, directional);
     }
 
+    function cargarModelo() {
+      const loader = new THREE.GLTFLoader();
+      loader.load("celeste.glb", function(gltf) {
+        modelo = gltf.scene;
+        modelo.scale.set(2, 2, 2);    // Ajusta tamaño según tu GLB
+        modelo.position.set(3.5, 0, 0); // A la derecha del texto
+        scene.add(modelo);
+
+        // Centrar cámara hacia el texto y el modelo
+        const box = new THREE.Box3().setFromObject(modelo);
+        const center = box.getCenter(new THREE.Vector3());
+        camera.lookAt(center);
+      }, undefined, function(error) {
+        console.error("Error al cargar el modelo:", error);
+      });
+    }
+
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.z = 8;
+      camera.position.set(0, 0, 10);
 
-      renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      crearEscudo();
       luces();
+      cargarModelo();
     }
 
     function animate() {
       requestAnimationFrame(animate);
-      if (escudo) escudo.rotation.y += 0.01;
+      if (modelo) modelo.rotation.y += 0.01; // Giro lento
       renderer.render(scene, camera);
     }
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     init();
     animate();
